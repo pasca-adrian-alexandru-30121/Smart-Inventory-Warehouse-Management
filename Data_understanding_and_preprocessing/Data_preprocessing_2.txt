@@ -1,0 +1,99 @@
+import pandas as pd 
+import numpy as np
+import matplotlib.pyplot as plt
+import pywt
+from scipy import signal
+from scipy.ndimage import median_filter
+from scipy.fft import fft,ifft
+data=pd.read_csv(r'D:\Anu3\Semestrul1\SBC\SBCProiect\PWM_255.csv')
+data=data.rename(columns={'Speed Right\tð0.00':'Speed Right'})
+data.head(2)
+motor_speed_left=data['Speed Left'].values
+motor_speed_right=data['Speed Right'].values
+time_left=np.arange(len(motor_speed_left))
+time_right=np.arange(len(motor_speed_right))
+print(time_left)
+plt.figure(figsize=(8,6))
+plt.plot(time_left,motor_speed_left,label='Original Motor Speed Left')
+plt.title("Original Motor Speed Left PWM 255")
+plt.legend()
+plt.show()
+plt.figure(figsize=(8,6))
+plt.plot(time_right,motor_speed_right,label='Original Motor Right Left')
+plt.title("Original Motor Right Left PWM 255'")
+plt.legend()
+plt.show()
+def apply_median_filter(data,time, size=5):
+    filtered_data = median_filter(data, size=size) 
+
+    # Plotting 
+    plt.figure(figsize=(10, 6)) 
+    plt.plot(time, data, label='Original Signal Motor', color='blue', alpha=0.5)
+    plt.plot(time, filtered_data, label='Median Filtered', color='orange') 
+    plt.title('Original vs. Median Filtered Signal') 
+    plt.legend() 
+    plt.show() 
+    return filtered_data
+median_filtered=apply_median_filter(motor_speed_right,time_right)
+def adaptive_filter(data,time, mysize=5): 
+    filtered_data = signal.wiener(data, mysize=mysize) 
+
+    # Plotting 
+    plt.figure(figsize=(10, 6)) 
+    plt.plot(time, data, label='Original Signal', color='blue', alpha=0.5) 
+    plt.plot(time, filtered_data, label='Adaptive Filtered', color='orange') 
+    plt.title('Original vs. Adaptive Filtered Signal') 
+    plt.legend()
+    plt.show() 
+    return filtered_data
+adaptive_filtered_left=adaptive_filter(motor_speed_left,time_left)
+adaptive_filtered_right=adaptive_filter(motor_speed_right,time_right)
+adaptive_median_filter=apply_median_filter(adaptive_filtered_right,time_right)
+def moving_mean_filter(data,time, window_size=20): 
+    filtered_data = np.convolve(data, np.ones(window_size) / window_size, mode='same') 
+
+    # Plotting 
+    plt.figure(figsize=(10, 6)) 
+    plt.plot(time, data, label='Original Motor Signal', color='blue', alpha=0.5)
+    plt.plot(time, filtered_data, label='Moving Mean Filtered', color='orange')
+    plt.title('Original vs. Moving Mean Filtered Signal') 
+    plt.legend() 
+    plt.show() 
+    return filtered_data 
+from scipy.io import savemat
+filtered_data=moving_mean_filter(motor_speed_right,time_right)
+array=pd.DataFrame(filtered_data,columns=['Speed Right'])
+array.to_csv("D:\Anu3\Semestrul1\SBC\SBCProiect\speedmotorright.csv",index=False)
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+plt.figure(figsize=(10, 6))
+plt.plot(time_left, motor_speed_left, label='Original Motor Speed Left (Channel 1)')
+plt.title("Original Motor Speed (Channel 1)")
+plt.legend()
+plt.show()
+motor_left_df=pd.DataFrame(motor_speed_left)
+pca=PCA(n_components=1)
+motor_left_pca=pca.fit_transform(motor_left_df)
+plt.figure(figsize=(10, 5)) 
+plt.scatter(motor_left_pca[:, 0], motor_left_pca[:, 0], c='orange', edgecolor='k', s=20)
+plt.title("PCA Projection for Speed Motor Left") 
+plt.xlabel("Principal Component 1") 
+plt.ylabel("Principal Component 2") 
+plt.show()
+motor_left_tsne=TSNE(n_components=1).fit_transform(motor_left_df)
+
+plt.figure(figsize=(10, 6)) 
+plt.scatter(motor_left_tsne[:, 0], motor_left_tsne[:, 0], c='purple', edgecolor='k', s=20) 
+plt.title("t-SNE Projection for motor left PWM 255") 
+plt.xlabel("t-SNE Dimension 1") 
+plt.ylabel("t-SNE Dimension 2") 
+plt.show()
+pca=PCA(n_components=1)
+motor_right_df=pd.DataFrame(motor_speed_right)
+motor_right_pca=pca.fit_transform(motor_right_df)
+plt.figure(figsize=(10, 5)) 
+plt.scatter(motor_right_pca[:, 0], motor_right_pca[:, 0], c='orange', edgecolor='k', s=20)
+plt.title("PCA Projection for Speed Motor Right") 
+plt.xlabel("Principal Component 1") 
+plt.ylabel("Principal Component 2") 
+plt.show()
